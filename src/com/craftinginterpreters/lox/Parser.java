@@ -63,7 +63,7 @@ public class Parser {
         while (match(TokenType.SLASH, TokenType.STAR)) {
             Token operator = previous();
             Expr right = unary();
-            return new Expr.Binary(expr, operator, right);
+            expr = new Expr.Binary(expr, operator, right);
         }
 
         return expr;
