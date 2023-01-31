@@ -9,6 +9,28 @@ public class Interpreter implements Expr.Visitor<Object> {
         return expr.accept(this);
     }
 
+    public void interpret(Expr expr) {
+        try {
+            var value = evaluate(expr);
+            System.out.println(stringify(value));
+        } catch (RuntimeError err) {
+            Lox.runtimeError(err);
+        }
+    }
+
+    private String stringify(Object object) {
+        if (object == null) return "nil";
+        if (object instanceof Double) {
+            String text = object.toString();
+            if (text.endsWith(".0")) {
+                text = text.substring(0, text.length() - 2);
+            }
+            return text;
+        }
+
+        return object.toString();
+    }
+
     @Override
     public Object visitBinaryExpr(Expr.Binary expr) {
         Object left = evaluate(expr.left);
@@ -16,28 +38,33 @@ public class Interpreter implements Expr.Visitor<Object> {
 
         switch (expr.operator.type) {
             case MINUS:
-                checkNumberOperand(expr.operator, right);
+                checkNumberOperands(expr.operator, left, right);
                 return (double) left - (double) right;
             case SLASH:
-                checkNumberOperand(expr.operator, right);
+                checkNumberOperands(expr.operator, left, right);
                 return (double) left / (double) right;
             case STAR:
+                checkNumberOperands(expr.operator, left, right);
                 return (double) left * (double) right;
             case PLUS:
                 if (left instanceof Double && right instanceof Double) {
                     return (double) left + (double) right;
                 }
                 if (left instanceof String && right instanceof String) {
-                    return (String) left + (String) right;
+                    return left + (String) right;
                 }
                 throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
             case GREATER:
+                checkNumberOperands(expr.operator, left, right);
                 return (double) left > (double) right;
             case GREATER_EQUAL:
+                checkNumberOperands(expr.operator, left, right);
                 return (double) left >= (double) right;
             case LESS:
+                checkNumberOperands(expr.operator, left, right);
                 return (double) left < (double) right;
             case LESS_EQUAL:
+                checkNumberOperands(expr.operator, left, right);
                 return (double) left <= (double) right;
             case BANG_EQUAL:
                 return !isEqual(left, right);
