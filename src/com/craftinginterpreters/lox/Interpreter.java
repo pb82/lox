@@ -1,21 +1,27 @@
 package com.craftinginterpreters.lox;
 
 import java.io.ObjectStreamException;
+import java.util.List;
 
 import static com.craftinginterpreters.lox.TokenType.MINUS;
 
-public class Interpreter implements Expr.Visitor<Object> {
+public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private Object evaluate(Expr expr) {
         return expr.accept(this);
     }
 
-    public void interpret(Expr expr) {
+    public void interpret(List<Stmt> statements) {
         try {
-            var value = evaluate(expr);
-            System.out.println(stringify(value));
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
         } catch (RuntimeError err) {
             Lox.runtimeError(err);
         }
+    }
+
+    private void execute(Stmt statement) {
+        statement.accept(this);
     }
 
     private String stringify(Object object) {
@@ -100,6 +106,11 @@ public class Interpreter implements Expr.Visitor<Object> {
         return null;
     }
 
+    @Override
+    public Object visitVariableExpr(Expr.Variable expr) {
+        return null;
+    }
+
     private boolean isEqual(Object a, Object b) {
         if (a == null && b == null) return true;
         if (a == null) return false;
@@ -120,5 +131,22 @@ public class Interpreter implements Expr.Visitor<Object> {
     private void checkNumberOperands(Token operator, Object left, Object right) {
         checkNumberOperand(operator, left);
         checkNumberOperand(operator, right);
+    }
+
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        evaluate(stmt.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        return null;
+    }
+
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        System.out.println(stringify(evaluate(stmt.expression)));
+        return null;
     }
 }
