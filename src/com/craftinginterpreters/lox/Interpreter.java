@@ -114,6 +114,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        return null;
+    }
+
+    @Override
     public Object visitUnaryExpr(Expr.Unary expr) {
         Object right = evaluate(expr.right);
 
