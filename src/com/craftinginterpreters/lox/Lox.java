@@ -31,7 +31,7 @@ public class Lox {
 
     static void error(Token token, String message) {
         if (token.type == TokenType.EOF) {
-            report(token.line, "at end", message);
+            report(token.line, " at end", message);
         } else {
             report(token.line, " at '" + token.lexeme + "'", message);
         }
@@ -81,7 +81,8 @@ public class Lox {
         } else if (args.length == 1) {
             runFile(args[0]);
         } else {
-            runPrompt();
+            // runPrompt();
+            run("for (var a = 0; a < 10; a = a + 1) { if (a >= 5) { break; } print a; }");
         }
     }
 

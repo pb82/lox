@@ -3,10 +3,12 @@ package com.craftinginterpreters.lox;
 import java.io.ObjectStreamException;
 import java.util.List;
 
-import static com.craftinginterpreters.lox.TokenType.MINUS;
-import static com.craftinginterpreters.lox.TokenType.OR;
+import static com.craftinginterpreters.lox.TokenType.*;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    private boolean breakLoop = false;
+    private int loopDepth = 0;
+
     private Object evaluate(Expr expr) {
         return expr.accept(this);
     }
@@ -133,7 +135,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         switch (expr.operator.type) {
             case MINUS:
-                return -(double)right;
+                return -(double) right;
             case BANG:
                 return !isTruthy(right);
         }
@@ -182,7 +184,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitIfStmt(Stmt.If stmt) {
-        if (isTruthy(stmt.condition)) {
+        if (isTruthy(evaluate(stmt.condition))) {
             execute(stmt.thenBranch);
         } else if (stmt.elseBranch != null) {
             execute(stmt.elseBranch);
@@ -203,6 +205,29 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitPrintStmt(Stmt.Print stmt) {
         System.out.println(stringify(evaluate(stmt.expression)));
+        return null;
+    }
+
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        loopDepth++;
+        while (isTruthy(evaluate(stmt.condition))) {
+            execute(stmt.body);
+            if (breakLoop) {
+                breakLoop = false;
+                return null;
+            }
+        }
+        loopDepth--;
+        return null;
+    }
+
+    @Override
+    public Void visitBreakStmt(Stmt.Break stmt) {
+        if (loopDepth <= 0) {
+            throw new RuntimeError(stmt.token, "'break' not allowed outside of loop.");
+        }
+        breakLoop = true;
         return null;
     }
 }

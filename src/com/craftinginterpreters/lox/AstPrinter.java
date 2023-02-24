@@ -76,4 +76,14 @@ public class AstPrinter implements Expr.Visitor<String>, Stmt.Visitor<Void> {
     public Void visitPrintStmt(Stmt.Print stmt) {
         return null;
     }
+
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        return null;
+    }
+
+    @Override
+    public Void visitBreakStmt(Stmt.Break stmt) {
+        return null;
+    }
 }
