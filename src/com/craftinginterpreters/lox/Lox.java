@@ -81,8 +81,8 @@ public class Lox {
         } else if (args.length == 1) {
             runFile(args[0]);
         } else {
-            // runPrompt();
-            run("for (var a = 0; a < 10; a = a + 1) { if (a >= 5) { break; } print a; }");
+            runPrompt();
+            // run("for (var a = 0; a < 10; a = a + 1) { if (a == 3) continue; print a; }");
         }
     }
 

@@ -1,12 +1,15 @@
 package com.craftinginterpreters.lox;
 
 import java.io.ObjectStreamException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static com.craftinginterpreters.lox.TokenType.*;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private boolean breakLoop = false;
+    private boolean continueLoop = false;
     private int loopDepth = 0;
 
     private Object evaluate(Expr expr) {
@@ -26,6 +29,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     private void execute(Stmt statement) {
+        if (breakLoop || continueLoop) return;
         statement.accept(this);
     }
 
@@ -104,6 +108,23 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
         return null;
 
+    }
+
+    @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        Object callee = evaluate(expr.callee);
+
+        if (!(callee instanceof LoxCallable)) {
+            throw new RuntimeError(expr.paren, "Can only call functions and classes.");
+        }
+
+        List<Object> arguments = new ArrayList<>();
+        for (Expr argument : expr.arguments) {
+            arguments.add(evaluate(argument));
+        }
+
+        LoxCallable function = (LoxCallable) callee;
+        return function.call(this, arguments);
     }
 
     @Override
