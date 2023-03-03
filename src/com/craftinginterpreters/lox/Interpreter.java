@@ -8,15 +8,30 @@ import java.util.Locale;
 import static com.craftinginterpreters.lox.TokenType.*;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
+    final Environment globals = new Environment();
+    private Environment environment = globals;
+
     private boolean breakLoop = false;
     private boolean continueLoop = false;
     private int loopDepth = 0;
 
+    Interpreter() {
+        globals.define("clock", new LoxCallable() {
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                return (double) System.currentTimeMillis() / 1000.0;
+            }
+
+            @Override
+            public int arity() {
+                return 0;
+            }
+        });
+    }
+
     private Object evaluate(Expr expr) {
         return expr.accept(this);
     }
-
-    private Environment environment = new Environment();
 
     public void interpret(List<Stmt> statements) {
         try {
@@ -33,7 +48,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         statement.accept(this);
     }
 
-    private void executeBlock(List<Stmt> statements, Environment environment) {
+    public void executeBlock(List<Stmt> statements, Environment environment) {
         Environment previous = this.environment;
         try {
             this.environment = environment;
@@ -87,6 +102,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 if (left instanceof String && right instanceof String) {
                     return left + (String) right;
                 }
+                if (left instanceof String && right instanceof Double) {
+                    return left + right.toString();
+                }
+                if (left instanceof Double && right instanceof String) {
+                    return left.toString() + right;
+                }
                 throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
             case GREATER:
                 checkNumberOperands(expr.operator, left, right);
@@ -124,6 +145,10 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         LoxCallable function = (LoxCallable) callee;
+        if (arguments.size() != function.arity()) {
+            throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
+        }
+
         return function.call(this, arguments);
     }
 
@@ -200,6 +225,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
         evaluate(stmt.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        LoxFunction function = new LoxFunction(stmt);
+        environment.define(stmt.name.lexeme, function);
         return null;
     }
 
