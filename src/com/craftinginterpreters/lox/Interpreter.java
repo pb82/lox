@@ -1,9 +1,7 @@
 package com.craftinginterpreters.lox;
 
 import java.io.ObjectStreamException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 import static com.craftinginterpreters.lox.TokenType.*;
 
@@ -14,6 +12,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private boolean breakLoop = false;
     private boolean continueLoop = false;
     private int loopDepth = 0;
+
+    private final Map<Expr, Integer> locals = new HashMap<>();
 
     Interpreter() {
         globals.define("clock", new LoxCallable() {
@@ -76,7 +76,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.value);
-        environment.assign(expr.name, value);
+
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            environment.assignAt(distance, expr.name, value);
+        } else {
+            globals.assign(expr.name, value);
+        }
+
         return value;
     }
 
@@ -191,7 +198,16 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
-        return environment.get(expr.name);
+        return lookupVariable(expr.name, expr);
+    }
+
+    private Object lookupVariable(Token name, Expr expr) {
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            return environment.getAt(distance, name.lexeme);
+        } else {
+            return globals.get(name);
+        }
     }
 
     private boolean isEqual(Object a, Object b) {
@@ -292,5 +308,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
         breakLoop = true;
         return null;
+    }
+
+    public void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
     }
 }
