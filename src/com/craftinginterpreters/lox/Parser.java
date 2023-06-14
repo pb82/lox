@@ -5,7 +5,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Parser {
-    private static class ParseError extends  RuntimeException{}
+    private static class ParseError extends RuntimeException {
+    }
+
     private final List<Token> tokens;
     private int current = 0;
 
@@ -66,13 +68,27 @@ public class Parser {
 
     private Stmt declaration() {
         try {
-            if(match(TokenType.FUN)) return function("function");
+            if (match(TokenType.CLASS)) return classDeclaration();
+            if (match(TokenType.FUN)) return function("function");
             if (match(TokenType.VAR)) return varDeclaration();
             return statement();
         } catch (ParseError err) {
             synchronize();
             return null;
         }
+    }
+
+    private Stmt classDeclaration() {
+        Token name = consume(TokenType.IDENTIFIER, "Expect class name.");
+        consume(TokenType.LEFT_BRACE, "Expect '{' before class body");
+
+        List<Stmt.Function> methods = new ArrayList<>();
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.");
+        return new Stmt.Class(name, methods);
     }
 
     private Stmt.Function function(String kind) {
@@ -203,7 +219,8 @@ public class Parser {
 
     private Stmt whileStatement() {
         consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.");
-        Expr condition = expression();consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.");
+        Expr condition = expression();
+        consume(TokenType.RIGHT_PAREN, "Expect ')' after condition.");
         Stmt body = statement();
         return new Stmt.While(condition, body);
     }
@@ -270,7 +287,7 @@ public class Parser {
     private Expr term() {
         Expr expr = factor();
 
-        while(match(TokenType.MINUS, TokenType.PLUS)) {
+        while (match(TokenType.MINUS, TokenType.PLUS)) {
             Token operator = previous();
             Expr right = factor();
             expr = new Expr.Binary(expr, operator, right);
@@ -392,7 +409,7 @@ public class Parser {
 
     private void synchronize() {
         advance();
-        while(!isAtEnd()) {
+        while (!isAtEnd()) {
             if (previous().type == TokenType.SEMICOLON) return;
             switch (peek().type) {
                 case CLASS:
