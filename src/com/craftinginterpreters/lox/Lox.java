@@ -16,7 +16,7 @@ public class Lox {
     static boolean hadRuntimeError = false;
 
     static void runtimeError(RuntimeError error) {
-        System.err.println(error.getMessage() + "\n[line " + error.token.line + "]");
+        System.out.println("[line " + error.token.line + "] Runtime error: " + error.getMessage());
         hadRuntimeError = true;
     }
 
@@ -25,7 +25,7 @@ public class Lox {
     }
 
     static void report(int line, String where, String message) {
-        System.err.println("[line " + line + "] Error" + where + ": " + message);
+        System.out.println("[line " + line + "] Error" + where + ": " + message);
         hadError = true;
     }
 
